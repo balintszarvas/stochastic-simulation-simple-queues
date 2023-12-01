@@ -5,18 +5,18 @@ import os
 import matplotlib.pyplot as plt
 import csv
 from numba import jit
+from Q2_sandor import run_simulation
 
 def plot_results(output_file):
     with open(output_file, mode='r') as file:
         reader = csv.reader(file)
-        next(reader)  # Skip header row
-        data = [row for row in reader if float(row[1]) != 0.99]  # Exclude rows where rho is 1
+        next(reader)
+        data = [row for row in reader if float(row[1]) != 0.99]  # Exclude rows where rho is a certain value
 
-    # Assuming variance is in some column, replace 'variance_column_index' with the actual index
-    variance_column_index = 6  # Update this with the actual index of variance in your data
+    variance_column_index = 6 
 
     for n in set(row[0] for row in data):
-        plt.figure()  # Create a new figure for each n
+        plt.figure()
         for rho in set(row[1] for row in data if row[0] == n):
             filtered_data = [row for row in data if row[0] == n and row[1] == rho]
             run_counts = [int(row[7]) for row in filtered_data]
@@ -29,7 +29,14 @@ def plot_results(output_file):
         plt.legend()
         plt.show()
 
-    
+
+def plot_waiting_times(wait_times):
+    plt.hist(wait_times, bins='auto', color='blue', alpha=0.7, rwidth=0.85)
+    plt.grid(axis='y', alpha=0.75)
+    plt.xlabel('Waiting Time')
+    plt.ylabel('Frequency')
+    plt.title('Distribution of Waiting Times')
+    plt.show()
 
     
 def plot_additional_results(output_file):
@@ -61,4 +68,7 @@ def plot_additional_results(output_file):
         plt.legend()
         plt.show()
 
-plot_results("simulation_results-2.csv")
+# plot_results("simulation_results-2.csv")
+
+wait_times = run_simulation(n, rho, mu)
+plot_waiting_times(wait_times)
