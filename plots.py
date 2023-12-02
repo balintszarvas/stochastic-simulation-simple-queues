@@ -78,55 +78,91 @@ def subplot_std_deviation_mmn(ns):
 
 # Average Waiting Time for FIFO vs Shortest Job Priority
 def plot_fifo_vs_sjf(ns):
-    plt.figure(figsize=(10, 6))
+    num_subplots = len(ns)
+    fig, axes = plt.subplots(num_subplots, 1, figsize=(10, 6 * num_subplots))
 
-    for n in ns:
+    if num_subplots == 1:
+        axes = [axes]
+
+    for idx, n in enumerate(ns):
         df_fifo = load_data("M_M_N", n)
         df_sjf = load_data("SHORTEST_JOB_FIRST", n)
 
-        sns.lineplot(x='number_of_customers', y='mean_waiting_time', data=df_fifo, label=f'FIFO (n={n})')
-        sns.lineplot(x='number_of_customers', y='mean_waiting_time', data=df_sjf, label=f'Shortest Job First (n={n})')
+        sns.lineplot(x='number_of_customers', y='mean_waiting_time', data=df_fifo, label=f'FIFO (n={n})', ax=axes[idx])
+        sns.lineplot(x='number_of_customers', y='mean_waiting_time', data=df_sjf, label=f'Shortest Job First (n={n})', ax=axes[idx])
 
-    plt.xlabel('Number of Customers')
-    plt.ylabel('Average Waiting Time')
-    plt.title('FIFO vs Shortest Job First')
-    plt.legend()
+        axes[idx].set_xlabel('Number of Customers')
+        axes[idx].set_ylabel('Average Waiting Time')
+        axes[idx].set_title(f'FIFO vs Shortest Job First (n={n})')
+        axes[idx].legend()
+
+    plt.tight_layout()
     plt.show()
 
-# Mean waiting time for M/M/N with confidence intervals
 def subplot_mean_waiting_time_mmn_with_ci(ns):
-    fig, axes = plt.subplots(len(ns), 2, figsize=(14, 6 * len(ns)), sharex=True)
+    # Create a 3-column subplot structure for each 'n'.
+    fig, axes = plt.subplots(len(ns), 3, figsize=(21, 6 * len(ns)), sharex=True)
 
     for i, n in enumerate(ns):
         df_mmn = load_data("M_M_N", n)
         for rho in df_mmn['rho'].unique():
             df_rho = df_mmn[df_mmn['rho'] == rho]
-            sns.lineplot(ax=axes[i, 0], x='number_of_customers', y='mean_waiting_time', data=df_rho,
-                         label=f'rho={rho}', ci="sd", estimator='mean', err_style='band')
 
+            # Calculate the standard deviation.
             df_rho['std_dev'] = np.sqrt(df_rho['variance'])
-            sns.lineplot(ax=axes[i, 1], x='number_of_customers', y='std_dev', data=df_rho,
-                         label=f'rho={rho}', ci="sd", estimator='mean', err_style='band')
 
+            # Calculate the absolute size of the confidence interval.
+            df_rho['ci_size'] = df_rho['ci_upper'] - df_rho['ci_lower']
+            
+            # grouped = df_rho.groupby('number_of_customers').agg({'mean_waiting_time': 'mean', 
+            #                                                  'ci_lower': 'mean', 
+            #                                                  'ci_upper': 'mean'})
+
+            # # Plot mean waiting time.
+            # axes[i, 0].plot(grouped.index, grouped['mean_waiting_time'], label=f'rho={rho}')
+
+            # # Fill between ci_lower and ci_upper.
+            # axes[i, 0].fill_between(grouped.index, grouped['ci_lower'], grouped['ci_upper'], alpha=0.3)
+            
+            # Plot mean waiting time with standard deviation as the confidence interval.
+            sns.lineplot(ax=axes[i, 0], x='number_of_customers', y='mean_waiting_time', data=df_rho,
+                         label=f'rho={rho}', estimator='mean', ci='sd')
+            
+            # Plot standard deviation without confidence intervals.
+            sns.lineplot(ax=axes[i, 1], x='number_of_customers', y='std_dev', data=df_rho,
+                         label=f'rho={rho}', ci=None)
+            
+            # Plot the size of the confidence interval for mean waiting time without confidence intervals.
+            sns.lineplot(ax=axes[i, 2], x='number_of_customers', y='ci_size', data=df_rho,
+                         label=f'rho={rho}', ci=None)
+
+        # Set labels and titles for the first column.
         axes[i, 0].set_xlabel('Number of Measurements (customers)')
         axes[i, 0].set_ylabel('Mean Waiting Time')
         axes[i, 0].set_title(f'M/M/N (n={n}) Mean Waiting Time')
         axes[i, 0].legend()
 
+        # Set labels and titles for the second column.
         axes[i, 1].set_xlabel('Number of Measurements (customers)')
         axes[i, 1].set_ylabel('Standard Deviation of Waiting Time')
         axes[i, 1].set_title(f'M/M/N (n={n}) Standard Deviation')
         axes[i, 1].legend()
 
+        # Set labels and titles for the third column.
+        axes[i, 2].set_xlabel('Number of Measurements (customers)')
+        axes[i, 2].set_ylabel('CI Size of Mean Waiting Time')
+        axes[i, 2].set_title(f'M/M/N (n={n}) CI Size')
+        axes[i, 2].legend()
+
     plt.tight_layout()
     plt.show()
-
+    
 
 ns = [1, 2, 4]
 
 # Run the plotting functions
 subplot_mean_waiting_time_mmn_with_ci(ns)
-subplot_mean_waiting_time_mm1_md1(ns)
-subplot_mean_waiting_time_mmn_with_ci(ns)
-subplot_std_deviation_mmn(ns)
-plot_fifo_vs_sjf(ns)
+# subplot_mean_waiting_time_mm1_md1(ns)
+# subplot_mean_waiting_time_mmn_with_ci(ns)
+# subplot_std_deviation_mmn(ns)
+# plot_fifo_vs_sjf(ns)

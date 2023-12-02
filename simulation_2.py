@@ -68,26 +68,31 @@ def analyze(ns, rhos, mu, distribution, general_dist_params, output_file):
 
     for n in ns:
         for rho in rhos:
+            all_waiting_times = []
             for _ in range(30):
                 waiting_times = run_simulation(n, rho, mu, distribution, general_dist_params, 60000)
-                mean_list = np.concatenate((np.arange(100, 1000, 500), np.arange(1000, 20000, 3000), np.arange(10000, 40000, 2000)))
+                all_waiting_times.extend(waiting_times)  # Collect waiting times across all runs
 
-                for num_customers in mean_list:
-                    sampled_times = waiting_times[:num_customers]
-                    mean_wait = np.mean(sampled_times)
-                    variance = np.var(sampled_times, ddof=1)
-                    ci = stats.t.interval(0.95, len(sampled_times)-1, loc=mean_wait, scale=stats.sem(sampled_times))
-                    results.append({
-                        'n': n, 
-                        'rho': rho, 
-                        'mu': mu, 
-                        'distribution': distribution.name, 
-                        'mean_waiting_time': mean_wait, 
-                        'ci_lower': ci[0], 
-                        'ci_upper': ci[1], 
-                        'variance': variance, 
-                        'number_of_customers': num_customers
-                    })
+            mean_list = np.concatenate((np.arange(100, 1000, 500), np.arange(1000, 20000, 3000), np.arange(10000, 40000, 2000)))
+
+            for num_customers in mean_list:
+                sampled_times = all_waiting_times[:num_customers]
+                mean_wait = np.mean(sampled_times)
+                variance = np.var(sampled_times, ddof=1)
+                std_dev = np.std(sampled_times, ddof=1)
+                ci = stats.t.interval(0.95, len(sampled_times)-1, loc=mean_wait, scale=stats.sem(sampled_times))
+                results.append({
+                    'n': n, 
+                    'rho': rho, 
+                    'mu': mu, 
+                    'distribution': distribution.name, 
+                    'mean_waiting_time': mean_wait, 
+                    'std_dev': std_dev,
+                    'ci_lower': ci[0], 
+                    'ci_upper': ci[1], 
+                    'variance': variance, 
+                    'number_of_customers': num_customers
+                })
 
             print(f"Completed analysis for n={n}, rho={rho}, distribution={distribution.name}")
 
