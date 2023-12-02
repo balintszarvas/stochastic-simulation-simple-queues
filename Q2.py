@@ -28,6 +28,32 @@ def customer(env, customer, queue, mu, t_waiting_time):
         t_wait = env.now
         yield env.timeout(t_service_time)
         t_waiting_time.append(t_wait - t_arrive)
+
+def customer_prio(env, queue, mu, t_waiting_time):
+    t_arrive = env.now
+    t_service_time = service_time(mu)
+    prio = t_service_time
+    with queue.request(priority=prio) as req:
+        yield req
+        t_wait = env.now
+        yield env.timeout(t_service_time)
+        t_waiting_time.append(t_wait - t_arrive)
+
+def source_prio(env, queue, n, rho, mu, t_waiting_time):
+    while True:
+        yield env.timeout(interarrival(n, rho, mu))
+        c = customer_prio(env, queue, mu, t_waiting_time)
+        env.process(c)
+
+@jit
+def run_simulation_prior(n, rho, mu, run_time=60000):
+    env = simpy.Environment()
+    queue = simpy.PriorityResource(env, capacity=n)
+    wait_times = []
+    env.process(source_prio(env, queue, n, rho, mu, wait_times))
+    env.run(until=run_time)
+    return wait_times
+
         
         
 def source(env, queue,n, rho, mu, t_waiting_time):
