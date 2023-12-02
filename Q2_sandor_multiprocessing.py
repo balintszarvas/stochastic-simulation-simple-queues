@@ -40,7 +40,7 @@ def run_simulation(n, rho, mu, run_time=60000, run_id=0):
 def worker(n, rho, mu, run_id):
     return run_simulation(n, rho, mu, 60000, run_id)
 
-def analyze(ns, rhos, mu, runs, output_file="simulation_results.csv"):
+def analyze(ns, rhos, mu, runs, output_file="simulation_results-3.csv"):
     with open(output_file, mode='w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(['n', 'rho', 'mu', 'mean_waiting_time', 'ci_lower', 'ci_upper', 'variance', 'runs'])
