@@ -6,14 +6,13 @@ import scipy.stats as stats
 
 sns.set(style="darkgrid")
 
-# Function to load and filter data from CSV file based on distribution and n
 def load_data(distribution, n=None):
     df = pd.read_csv(f"{distribution.lower()}_simulation_results.csv")
     if n is not None:
         df = df[df['n'] == n]
     return df
 
-# Subplot function for Mean Waiting Time vs Number of Customers for MM1 and MD1
+# Mean Waiting Time vs Number of Customers for MM1 and MD1
 def subplot_mean_waiting_time_mm1_md1(ns):
     fig, axes = plt.subplots(len(ns), 1, figsize=(10, 6 * len(ns)))
 
@@ -32,7 +31,7 @@ def subplot_mean_waiting_time_mm1_md1(ns):
     plt.tight_layout()
     plt.show()
 
-# Subplot function for Mean Waiting Time for M/M/N with confidence intervals
+# Mean Waiting Time for M/M/N with confidence intervals
 def subplot_mean_waiting_time_mmn_with_ci(ns):
     fig, axes = plt.subplots(len(ns), 1, figsize=(10, 6 * len(ns)))
 
@@ -52,7 +51,7 @@ def subplot_mean_waiting_time_mmn_with_ci(ns):
     plt.tight_layout()
     plt.show()
 
-# Subplot function for Standard Deviation for M/M/N
+# Standard Deviation for M/M/N
 def subplot_std_deviation_mmn(ns):
     fig, axes = plt.subplots(len(ns), 1, figsize=(10, 6 * len(ns)))
 
@@ -62,7 +61,6 @@ def subplot_std_deviation_mmn(ns):
         for rho in df['rho'].unique():
             df_rho = df[df['rho'] == rho]
             std_dev = np.sqrt(df_rho['variance'])
-            # Create a new DataFrame for plotting
             std_dev_df = pd.DataFrame({
                 'number_of_customers': df_rho['number_of_customers'],
                 'std_deviation': std_dev
@@ -78,7 +76,7 @@ def subplot_std_deviation_mmn(ns):
     plt.show()
 
 
-# Function to compare Average Waiting Time for FIFO vs Shortest Job Priority
+# Average Waiting Time for FIFO vs Shortest Job Priority
 def plot_fifo_vs_sjf(ns):
     plt.figure(figsize=(10, 6))
 
@@ -95,6 +93,7 @@ def plot_fifo_vs_sjf(ns):
     plt.legend()
     plt.show()
 
+# Mean waiting time for M/M/N with confidence intervals
 def subplot_mean_waiting_time_mmn_with_ci(ns):
     fig, axes = plt.subplots(len(ns), 2, figsize=(14, 6 * len(ns)), sharex=True)
 
@@ -102,12 +101,9 @@ def subplot_mean_waiting_time_mmn_with_ci(ns):
         df_mmn = load_data("M_M_N", n)
         for rho in df_mmn['rho'].unique():
             df_rho = df_mmn[df_mmn['rho'] == rho]
-            # Assuming 'mean_waiting_time', 'ci_lower', and 'ci_upper' are columns in your DataFrame
-            # For the mean with confidence intervals
             sns.lineplot(ax=axes[i, 0], x='number_of_customers', y='mean_waiting_time', data=df_rho,
                          label=f'rho={rho}', ci="sd", estimator='mean', err_style='band')
 
-            # For the standard deviation
             df_rho['std_dev'] = np.sqrt(df_rho['variance'])
             sns.lineplot(ax=axes[i, 1], x='number_of_customers', y='std_dev', data=df_rho,
                          label=f'rho={rho}', ci="sd", estimator='mean', err_style='band')
@@ -125,7 +121,7 @@ def subplot_mean_waiting_time_mmn_with_ci(ns):
     plt.tight_layout()
     plt.show()
 
-# Define ns for simulations
+
 ns = [1, 2, 4]
 
 # Run the plotting functions
