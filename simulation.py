@@ -21,7 +21,7 @@ def service_time(mu, distribution, general_dist_params=None):
     elif distribution == ServiceRateDistribution.M_D_N:
         return 1/mu
     elif distribution == ServiceRateDistribution.HYPEREXPONENTIAL:
-        return np.random.exponential(1) if np.random.rand() < 0.75 else np.random.exponential(0.2)
+        return np.random.exponential(1) if np.random.rand() < 0.75 else np.random.exponential(5)
     else:
         raise ValueError(f"Unsupported distribution type: {distribution}")
 
@@ -156,13 +156,13 @@ mu = 1
 ns = [1, 2, 4]
 rhos = [0.7, 0.8, 0.9, 0.95]
 
-
+distribution = ServiceRateDistribution.HYPEREXPONENTIAL
 output_file = f"{distribution.name.lower()}_simulation_results.csv"
 analyze(ns, rhos, mu, distribution, output_file, K=10)
 output_files.append(output_file)
 
-output_files = []
-for distribution in ServiceRateDistribution:
-    output_file = f"{distribution.name.lower()}_simulation_results.csv"
-    analyze(ns, rhos, mu, distribution, output_file, K=10)
-    output_files.append(output_file)
+# output_files = []
+# for distribution in ServiceRateDistribution:
+#     output_file = f"{distribution.name.lower()}_simulation_results.csv"
+#     analyze(ns, rhos, mu, distribution, output_file, K=10)
+#     output_files.append(output_file)

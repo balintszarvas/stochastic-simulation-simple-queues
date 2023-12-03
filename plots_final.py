@@ -144,15 +144,13 @@ def plot_distribution_and_analyze(queue_model, n, rho):
     plt.ylabel('Frequency', fontsize=fontsize)
     plt.title(f'Distribution of Mean Waiting Times for {queue_model_format[queue_model]["title"]} (m={n}, $\\rho$={rho})', fontsize=fontsize)
 
-    # Calculate metrics
+    # Metrics
     mean_val = np.mean(data)
     median_val = np.median(data)
-    # Assuming the mode is the maximum frequency for a bin in the histogram
     mode_val = data.value_counts().idxmax()
     perc_25 = np.percentile(data, 25)
     perc_75 = np.percentile(data, 75)
 
-    # Plot vertical lines for metrics
     plt.axvline(mean_val, color='darkblue', linestyle='-', label=f'Mean: {mean_val:.2f}')
     # plt.axvline(median_val, color='g', linestyle='-', label=f'Median: {median_val:.2f}')
     # plt.axvline(mode_val, color='b', linestyle=':', label=f'Mode: {mode_val:.2f}')
@@ -174,7 +172,6 @@ def plot_distribution_and_analyze(queue_model, n, rho):
     # plt.text(0.95, 0.85, f'KS Test (Normal) Statistic: {ks_stat_norm:.10f}', **text_props)
     # plt.text(0.95, 0.75, f'KS Test (Uniform) Statistic: {ks_stat_unif:.10f}', **text_props)
 
-    # Save the plot
     plt.savefig(f'final_plots/distribution_{queue_model_format[queue_model]["filename"]}_N_{n}_rho_{rho}.png')
     plt.close()
 
@@ -234,14 +231,6 @@ ns = [1, 2, 4]
 rhos = [0.7, 0.8, 0.9, 0.95]
 queue_models = ["MMN", "MDN", "ShortestJobFirst", "Hyperexponential"]
 
-    # file_map = {
-    #     "MMN": "m_m_n_simulation_results.csv",
-    #     "MDN": "m_d_n_simulation_results.csv",
-    #     "Hyperexponential": "hyperexponential_simulation_results.csv",
-    #     "ShortestJobFirst": "shortest_job_first_simulation_results.csv",
-    #     "MMNK": "m_m_n_k_simulation_results.csv"
-    # }
-
 # plot_mean_for_n(queue_models, ns)
 # plot_mean_for_rho(queue_models, ns)
 
@@ -249,7 +238,7 @@ queue_models = ["MMN", "MDN", "ShortestJobFirst", "Hyperexponential"]
 
 # plot_distribution_and_analyze("MMN", 1, 0.7)
 
-# plot_heatmap("Hyperexponential", ns, [0.7, 0.8, 0.9, 0.95], fixed_vmax=20)
+plot_heatmap("Hyperexponential", ns, [0.7, 0.8, 0.9, 0.95], fixed_vmax=20)
 
 compare_all_queue_models(queue_models, ns, rhos)
 
