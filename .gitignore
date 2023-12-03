@@ -1,5 +1,4 @@
 
-simulation_try.py
 __pycache__/simpy.cpython-311.pyc
 __pycache__/simulation_try.cpython-311.pyc
 main.aux
@@ -10,3 +9,6 @@ main.out
 main.pdf
 main.synctex.gz
 main.tex
+simulation_try.py
+*.pyc
+.DS_Store
