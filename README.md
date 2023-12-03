@@ -1,4 +1,4 @@
-# Stochastic Simulation Assignment 02 - Discrete Event Simulation - Simple Queues
+# Stochastic Simulation Assignment 02: Discrete Event Simulation (Simple Queues)
 
 ### License:
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -9,10 +9,10 @@ This repository contains Python scripts developed for a the second assignment of
 ## File Descriptions
 
 ### `simulation.py`
-`simulation.py` contains the main functions for the simulation.
+This script contains the main functions for the simulation. It enables to run five different types of queue (M/M/m (FIFO), M/d/m, hyperexponential, M/M/m (Shortest Job First) and M/M/m/K) for different service loads and server numbers. The output is in a .csv file containing all metrics and statistics.
 
 ### `plots.py`
-
+It takes the .csv output from `simulation.py` and creates a variety of plots, for instance the mean waiting time of the queues for different queuing types, service numbers and loads as heatmaps and comparison line plots as well as the distributions of individual stochastic simulations. It can also perform a comparison between all queing models for a set of parameters.
 
 ## Usage
 These scripts were run with Python 3.11.0 on MacOS Ventura. 
