@@ -28,9 +28,7 @@ These scripts were run with Python 3.11.0 on MacOS Ventura.
 ## Contact
 
 joana.costaesilva@student.uva.nl 
-
 balint.szarvas@student.uva.nl
-
 sandor.battaglini-fischer@student.uva.nl
 
 ---
