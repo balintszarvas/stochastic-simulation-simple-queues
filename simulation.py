@@ -143,8 +143,8 @@ def analyze(ns, rhos, mu, distribution, output_file, K=None):
     Analyzes the simulation results and writes them to a CSV file.
     
     Parameters:
-    - ns: list of int, numbers of servers to simulate.
-    - rhos: list of float, traffic intensities to simulate.
+    - ns: list of ints, numbers of servers to simulate.
+    - rhos: list of floats, traffic intensities to simulate.
     - mu: float, service rate of the system.
     - distribution: ServiceRateDistribution, type of distribution for service time.
     - output_file: str, filename to save results.
