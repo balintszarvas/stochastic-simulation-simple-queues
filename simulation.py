@@ -5,6 +5,14 @@ import pandas as pd
 from enum import Enum
 import time
 
+
+""" 
+This script contains the simulation code for the different queue types.
+The ServiceRateDistribution enum is used to specify the distribution of the service rate.
+
+"""
+
+
 class ServiceRateDistribution(Enum):
     M_M_N = 1
     M_D_N = 2
@@ -12,10 +20,25 @@ class ServiceRateDistribution(Enum):
     SHORTEST_JOB_FIRST = 4
     M_M_N_K = 5
 
+
+
 def interarrival(n, rho, mu):
+    """
+    Calculates the arrival time for a customer in a queue.
+    
+    Parameters:
+    - n: int, number of servers.
+    - rho: float, traffic intensity of the system.
+    - mu: float, service rate of the system.
+    """
     return np.random.exponential(1/(n*rho*mu))
 
+
 def service_time(mu, distribution, general_dist_params=None):
+    """
+    Calculates the service time for a customer based on the given distribution.
+    
+    """
     if distribution in [ServiceRateDistribution.M_M_N, ServiceRateDistribution.M_M_N_K, ServiceRateDistribution.SHORTEST_JOB_FIRST]:
         return np.random.exponential(1/mu)
     elif distribution == ServiceRateDistribution.M_D_N:
@@ -25,7 +48,18 @@ def service_time(mu, distribution, general_dist_params=None):
     else:
         raise ValueError(f"Unsupported distribution type: {distribution}")
 
+
 def customer(env, queue, mu, waiting_times, distribution, buffer=None):
+    """
+    Simulates a customer in the queue system.
+    
+    Some parameters:
+    - env: simpy.Environment, the simulation environment.
+    - queue: simpy.Resource, the queue resource.
+    - waiting_times: list, to store waiting times of each customer.
+    - buffer: simpy.Container, optional; buffer for the system.
+    
+    """
     if buffer is not None:
         yield buffer.put(1)
     arrival_time = env.now
@@ -37,7 +71,12 @@ def customer(env, queue, mu, waiting_times, distribution, buffer=None):
     if buffer is not None:
         yield buffer.get(1)
 
+
 def customer_prio(env, queue, mu, waiting_times, distribution):
+    """
+    Simulate a priority customer in the queue system.
+    
+    """
     arrival_time = env.now
     service_duration = service_time(mu, distribution)
     priority = service_duration
@@ -47,13 +86,23 @@ def customer_prio(env, queue, mu, waiting_times, distribution):
         yield env.timeout(service_duration)
         waiting_times.append(wait_time)
 
+
 def source(env, queue, n, rho, mu, waiting_times, distribution, buffer=None):
+    """
+    Generates customers and add them to the queue.
+
+    """
     while True:
         yield env.timeout(interarrival(n, rho, mu))
         if buffer is None or buffer.level < buffer.capacity:
             env.process(customer(env, queue, mu, waiting_times, distribution, buffer))
 
+
 def run_simulation(n, rho, mu, distribution, run_time, K=None):
+    """
+    Runs the queue simulation for a given setup and time.
+    
+    """
     env = simpy.Environment()
     waiting_times = []
 
@@ -72,26 +121,35 @@ def run_simulation(n, rho, mu, distribution, run_time, K=None):
     return waiting_times
 
 
-
 def analytical_mean_waiting_time_mmn(n, rho, mu):
+    """
+    Calculate the analytical mean waiting time for M/M/n queue.
+    
+    """
     if rho >= 1:
-        return float('inf')  # System is unstable for rho >= 1
+        return float('inf')
     if n == 1:
-        # M/M/1 Queue
         return rho / (mu * (1 - rho))
     else:
-        # M/M/n Queue using Erlang C formula
         rho_total = n * rho
         erlang_c_numerator = (rho_total ** n / np.math.factorial(n)) * (n / (n - rho_total))
         erlang_c_denominator = sum([rho_total ** k / np.math.factorial(k) for k in range(n)]) + erlang_c_numerator
         erlang_c = erlang_c_numerator / erlang_c_denominator
         return (erlang_c / (n * mu - n * rho * mu))
 
-    
-
-    
 
 def analyze(ns, rhos, mu, distribution, output_file, K=None):
+    """
+    Analyzes the simulation results and writes them to a CSV file.
+    
+    Parameters:
+    - ns: list of int, numbers of servers to simulate.
+    - rhos: list of float, traffic intensities to simulate.
+    - mu: float, service rate of the system.
+    - distribution: ServiceRateDistribution, type of distribution for service time.
+    - output_file: str, filename to save results.
+    - K: int, optional; capacity of the buffer for M/M/N/K simulation.
+    """
     results = []
     t_test_results = []
 
@@ -150,12 +208,10 @@ def analyze(ns, rhos, mu, distribution, output_file, K=None):
 
 
 
-
 # Simulation parameters
 mu = 1
 ns = [1, 2, 4]
 rhos = [0.7, 0.8, 0.9, 0.95]
-
 
 output_files = []
 for distribution in ServiceRateDistribution:

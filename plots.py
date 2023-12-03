@@ -5,6 +5,11 @@ import seaborn as sns
 import os
 from scipy.stats import kstest, expon, anderson, shapiro, norm, uniform
 
+"""
+This file contains the code used to generate the plots for the final report. 
+
+"""
+
 fontsize = 18
 colormap = "viridis"
 
@@ -22,6 +27,11 @@ os.makedirs('final_plots', exist_ok=True)
 
 
 def load_data(queue_model, n=None):
+    """
+    Loads the queue simulation results from the CSV files into a DataFrame.
+    
+    """
+
     file_map = {
         "MMN": "m_m_n_simulation_results.csv",
         "MDN": "m_d_n_simulation_results.csv",
@@ -45,6 +55,10 @@ queue_model_format = {
 
 
 def plot_mean_for_n(queue_models, ns):
+    """
+    Plot mean waiting time for different numbers of customers and servers.
+    
+    """
     for queue_model in queue_models:
         for index_n, n in enumerate(ns):
             df_mmn = load_data(queue_model, n)
@@ -69,6 +83,10 @@ def plot_mean_for_n(queue_models, ns):
 
 
 def plot_mean_for_rho(queue_models, ns):
+    """
+    Plot mean waiting time for different system loads across queue models.
+    
+    """
     for queue_model in queue_models:
         df_all = pd.concat([load_data(queue_model, n) for n in ns])
         
@@ -98,6 +116,10 @@ def plot_mean_for_rho(queue_models, ns):
         
 
 def compare_queue_models(queue_models, n, rho):
+    """
+    Compare mean waiting times between different queue models for a given number of servers and system load.
+    
+    """
     plt.figure(figsize=(10, 7))
 
     model_titles = []
@@ -132,6 +154,10 @@ def compare_queue_models(queue_models, n, rho):
 
 
 def plot_distribution_and_analyze(queue_model, n, rho):
+    """
+    Plot the distribution of mean waiting times and perform statistical tests.
+    
+    """
     fontsize = 22
     df = load_data(queue_model, n)
     df_rho = df[df['rho'] == rho]
@@ -177,6 +203,10 @@ def plot_distribution_and_analyze(queue_model, n, rho):
 
 
 def plot_heatmap(queue_model, ns, rhos, fixed_vmax):
+    """
+    Plot a heatmap of mean waiting times for different numbers of servers and system loads.
+    
+    """
     heatmap_data = pd.DataFrame(index=rhos, columns=ns)
 
     for n in ns:
@@ -198,6 +228,10 @@ def plot_heatmap(queue_model, ns, rhos, fixed_vmax):
     plt.close()
 
 def compare_all_queue_models(queue_models, ns, rhos):
+    """
+    Compare all queue models for given numbers of servers and system loads.
+    
+    """
     for n in ns:
         for rho in rhos:
             plt.figure(figsize=(10, 7))
@@ -231,6 +265,12 @@ ns = [1, 2, 4]
 rhos = [0.7, 0.8, 0.9, 0.95]
 queue_models = ["MMN", "MDN", "ShortestJobFirst", "Hyperexponential"]
 
+
+"""
+Uncomment one or many of the following lines to generate the respective plots.
+
+"""
+
 # plot_mean_for_n(queue_models, ns)
 # plot_mean_for_rho(queue_models, ns)
 
@@ -238,9 +278,9 @@ queue_models = ["MMN", "MDN", "ShortestJobFirst", "Hyperexponential"]
 
 # plot_distribution_and_analyze("MMN", 1, 0.7)
 
-plot_heatmap("Hyperexponential", ns, [0.7, 0.8, 0.9, 0.95], fixed_vmax=20)
+# plot_heatmap("Hyperexponential", ns, [0.7, 0.8, 0.9, 0.95], fixed_vmax=20)
 
-compare_all_queue_models(queue_models, ns, rhos)
+# compare_all_queue_models(queue_models, ns, rhos)
 
 
 
