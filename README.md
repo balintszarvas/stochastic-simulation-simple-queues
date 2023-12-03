@@ -23,14 +23,17 @@ These scripts were run with Python 3.11.0 on MacOS Ventura.
 * pandas==1.5.3
 * scipy==1.10.1
 * seaborn==0.13.0
-* enum==
-* time
+* simpy==4.1.1
 
 ## Contact
-joana.costaesilva@student.uva.nl
+
+joana.costaesilva@student.uva.nl 
+
 balint.szarvas@student.uva.nl
+
 sandor.battaglini-fischer@student.uva.nl
 
 ---
 
 Developed by Joana Costa e Silva, Bálint Szarvas and Sándor Battaglini-Fischer.
+
