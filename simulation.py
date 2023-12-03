@@ -58,8 +58,8 @@ def run_simulation(n, rho, mu, distribution, run_time, K=None):
     waiting_times = []
 
     if distribution == ServiceRateDistribution.M_M_N_K and K is not None:
-        queue = simpy.PriorityResource(env, capacity=n)  # n servers
-        buffer = simpy.Container(env, capacity=K, init=0)  # Finite capacity buffer
+        queue = simpy.PriorityResource(env, capacity=n)  
+        buffer = simpy.Container(env, capacity=K, init=0)
         env.process(source(env, queue, n, rho, mu, waiting_times, distribution, buffer))
     elif distribution == ServiceRateDistribution.SHORTEST_JOB_FIRST:
         queue = simpy.PriorityResource(env, capacity=n)
@@ -157,6 +157,9 @@ ns = [1, 2, 4]
 rhos = [0.7, 0.8, 0.9, 0.95]
 
 
+output_file = f"{distribution.name.lower()}_simulation_results.csv"
+analyze(ns, rhos, mu, distribution, output_file, K=10)
+output_files.append(output_file)
 
 output_files = []
 for distribution in ServiceRateDistribution:
