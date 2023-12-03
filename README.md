@@ -1,4 +1,5 @@
-# Stochastic Simulation Assignment 02 - Discrete Event Simulation - Simple Queues
+# Stochastic Simulation Assignment 02: Simple Queues
+Discrete Event Simulation
 
 ### License:
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
