@@ -10,20 +10,18 @@ class ServiceRateDistribution(Enum):
     M_D_N = 2
     HYPEREXPONENTIAL = 3
     SHORTEST_JOB_FIRST = 4
-    M_M_1_K = 5
+    M_M_N_K = 5
 
 def interarrival(n, rho, mu):
     return np.random.exponential(1/(n*rho*mu))
 
 def service_time(mu, distribution, general_dist_params=None):
-    if distribution == ServiceRateDistribution.M_M_N or distribution == ServiceRateDistribution.SHORTEST_JOB_FIRST:
+    if distribution in [ServiceRateDistribution.M_M_N, ServiceRateDistribution.M_M_N_K, ServiceRateDistribution.SHORTEST_JOB_FIRST]:
         return np.random.exponential(1/mu)
     elif distribution == ServiceRateDistribution.M_D_N:
         return 1/mu
     elif distribution == ServiceRateDistribution.HYPEREXPONENTIAL:
         return np.random.exponential(1) if np.random.rand() < 0.75 else np.random.exponential(0.2)
-    elif distribution == ServiceRateDistribution.M_M_1_K:
-        return np.random.exponential(1/mu)
     else:
         raise ValueError(f"Unsupported distribution type: {distribution}")
 
@@ -59,8 +57,8 @@ def run_simulation(n, rho, mu, distribution, run_time, K=None):
     env = simpy.Environment()
     waiting_times = []
 
-    if distribution == ServiceRateDistribution.M_M_1_K and K is not None:
-        queue = simpy.Resource(env, capacity=1)  # One service channel
+    if distribution == ServiceRateDistribution.M_M_N_K and K is not None:
+        queue = simpy.PriorityResource(env, capacity=n)  # n servers
         buffer = simpy.Container(env, capacity=K, init=0)  # Finite capacity buffer
         env.process(source(env, queue, n, rho, mu, waiting_times, distribution, buffer))
     elif distribution == ServiceRateDistribution.SHORTEST_JOB_FIRST:
@@ -89,21 +87,6 @@ def analytical_mean_waiting_time_mmn(n, rho, mu):
         erlang_c = erlang_c_numerator / erlang_c_denominator
         return (erlang_c / (n * mu - n * rho * mu))
 
-def analytical_mean_waiting_time_mm1k(rho, mu, K):
-    # Calculate the probability P0 that the system is empty
-    P0 = (1 - rho) / (1 - rho**(K+1))
-
-    # Calculate the mean number of customers in the system, L
-    if rho != 1:
-        L = (rho * (1 - (K+1) * rho**K + K * rho**(K+1))) / ((1 - rho) * (1 - rho**(K+1)))
-    else: # Handle the special case when rho is 1
-        L = K / 2
-
-    # Calculate the mean waiting time in the system, W
-    # Arrival rate, lambda = mu * rho
-    W = L / (mu * rho)
-
-    return W
     
 
     
@@ -116,12 +99,10 @@ def analyze(ns, rhos, mu, distribution, output_file, K=None):
         for rho in rhos:
             all_waiting_times = []
 
-            for _ in range(30):
-                if distribution == ServiceRateDistribution.M_M_1_K:
-                    # For M/M/1/K queue, pass K to the simulation
+            for _ in range(100):
+                if distribution == ServiceRateDistribution.M_M_N_K:
                     waiting_times = run_simulation(n, rho, mu, distribution, 60000, K)
                 else:
-                    # For other queue types
                     waiting_times = run_simulation(n, rho, mu, distribution, 60000)
 
                 all_waiting_times.extend(waiting_times)
@@ -144,25 +125,29 @@ def analyze(ns, rhos, mu, distribution, output_file, K=None):
                         'number_of_customers': num_customers
                     })
 
-            if distribution == ServiceRateDistribution.M_M_1_K:
-                analytical_mean = analytical_mean_waiting_time_mm1k(rho, mu, K)
-            else:
+            if distribution == ServiceRateDistribution.M_M_N:
                 analytical_mean = analytical_mean_waiting_time_mmn(n, rho, mu)
+                t_stat, p_value = stats.ttest_1samp(all_waiting_times, analytical_mean)
+                t_test_results.append({
+                    'n': n,
+                    'rho': rho,
+                    't_stat': t_stat,
+                    'p_value': p_value
+                })
+                print(f"Completed T-test for n={n}, rho={rho}: t_stat={t_stat}, p_value={p_value}")
+            else:
+                print(f"Completed simulation for n={n}, rho={rho}, distribution={distribution.name}")
 
-            t_stat, p_value = stats.ttest_1samp(all_waiting_times, analytical_mean)
-            t_test_results.append({
-                'n': n,
-                'rho': rho,
-                't_stat': t_stat,
-                'p_value': p_value
-            })
-            print(f"Completed T-test for n={n}, rho={rho}: t_stat={t_stat}, p_value={p_value}")
 
     df_results = pd.DataFrame(results)
-    df_t_test = pd.DataFrame(t_test_results)
-    combined_df = pd.merge(df_results, df_t_test, on=['n', 'rho'], how='outer')
+    if t_test_results:
+        df_t_test = pd.DataFrame(t_test_results)
+        combined_df = pd.merge(df_results, df_t_test, on=['n', 'rho'], how='outer')
+    else:
+        combined_df = df_results
     combined_df.to_csv(output_file)
     print(f"Results written to {output_file}")
+
 
 
 
@@ -173,7 +158,8 @@ rhos = [0.7, 0.8, 0.9, 0.95]
 
 
 
-distribution = ServiceRateDistribution.M_M_N
-K=10
-output_file = f"{distribution.name.lower()}_simulation_results.csv"
-analyze(ns, rhos, mu, distribution, output_file, K)
+output_files = []
+for distribution in ServiceRateDistribution:
+    output_file = f"{distribution.name.lower()}_simulation_results.csv"
+    analyze(ns, rhos, mu, distribution, output_file, K=10)
+    output_files.append(output_file)

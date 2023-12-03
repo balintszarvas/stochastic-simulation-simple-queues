@@ -27,7 +27,7 @@ def load_data(queue_model, n=None):
         "MDN": "m_d_n_simulation_results.csv",
         "Hyperexponential": "hyperexponential_simulation_results.csv",
         "ShortestJobFirst": "shortest_job_first_simulation_results.csv",
-        "MM1K": "m_m_1_k_simulation_results.csv"
+        "MMNK": "m_m_n_k_simulation_results.csv"
     }
     filename = file_map.get(queue_model, "m_m_n_simulation_results.csv")
     df = pd.read_csv(filename)
@@ -40,22 +40,23 @@ queue_model_format = {
     "MDN": {"title": "M/D/N", "filename": "MDN"},
     "Hyperexponential": {"title": "Hyperexponential", "filename": "Hyperexponential"},
     "ShortestJobFirst": {"title": "Shortest Job First", "filename": "ShortestJobFirst"},
-    "MM1K": {"title": "M/M/1/K", "filename": "MM1K"}
+    "MMNK": {"title": "M/M/1/K", "filename": "MM1K"}
 }
 
 
 def plot_mean_for_n(queue_models, ns):
     for queue_model in queue_models:
-        for n in ns:
+        for index_n, n in enumerate(ns):
             df_mmn = load_data(queue_model, n)
             plt.figure(figsize=(7, 5))
+            colors = plt.cm.viridis(np.linspace(0, 0.8, len(df_mmn['rho'].unique())))
 
-            for rho in df_mmn['rho'].unique():
+            for index_rho, rho in enumerate(sorted(df_mmn['rho'].unique())):
                 df_rho = df_mmn[df_mmn['rho'] == rho]
                 df_rho['std_dev'] = np.sqrt(df_rho['variance'])
                 df_rho['ci_size'] = df_rho['ci_upper'] - df_rho['ci_lower']
                 sns.lineplot(x='number_of_customers', y='mean_waiting_time', data=df_rho,
-                             label=fr'$\rho$={rho}', estimator='mean', ci='sd')
+                             label=fr'$\rho$={rho}', estimator='mean', ci='sd', color=colors[index_rho])
 
             plt.xlabel('Number of Customers')
             plt.ylabel('Mean Waiting Time')
@@ -66,21 +67,24 @@ def plot_mean_for_n(queue_models, ns):
             plt.close()
 
 
+
 def plot_mean_for_rho(queue_models, ns):
     for queue_model in queue_models:
         df_all = pd.concat([load_data(queue_model, n) for n in ns])
+        
+        colors = plt.cm.viridis(np.linspace(0, 0.8, len(ns)))
 
         for rho in df_all['rho'].unique():
             plt.figure(figsize=(7, 5))
 
-            for n in ns:
+            for index, n in enumerate(ns):
                 df_mmn = load_data(queue_model, n)
                 df_rho = df_mmn[df_mmn['rho'] == rho]
                 if not df_rho.empty:
                     df_rho['std_dev'] = np.sqrt(df_rho['variance'])
                     df_rho['ci_size'] = df_rho['ci_upper'] - df_rho['ci_lower']
                     sns.lineplot(x='number_of_customers', y='mean_waiting_time', data=df_rho,
-                                 label=f'N={n}', estimator='mean', ci='sd')
+                                 label=f'N={n}', estimator='mean', ci='sd', color=colors[index])
 
             plt.xlabel('Number of Customers')
             plt.ylabel('Mean Waiting Time')
@@ -89,6 +93,8 @@ def plot_mean_for_rho(queue_models, ns):
             plt.legend(loc='upper right')
             plt.savefig(f'final_plots/{queue_model_format[queue_model]["filename"]}_plot_rho_{rho}.png')
             plt.close()
+
+
         
 
 def compare_queue_models(queue_models, n, rho):
@@ -97,14 +103,17 @@ def compare_queue_models(queue_models, n, rho):
     model_titles = []
     model_filenames = []
 
-    for queue_model in queue_models:
+    colors = plt.cm.viridis(np.linspace(0, 0.7, len(queue_models)))
+
+    for index, queue_model in enumerate(queue_models):
         df = load_data(queue_model, n)
 
         if not df.empty:
             df_rho = df[df['rho'] == rho]
             if not df_rho.empty:
                 sns.lineplot(x='number_of_customers', y='mean_waiting_time', data=df_rho,
-                             label=f'{queue_model_format[queue_model]["title"]}', estimator='mean', ci='sd')
+                             label=f'{queue_model_format[queue_model]["title"]}', estimator='mean', ci='sd',
+                             color=colors[index])  
                 model_titles.append(queue_model_format[queue_model]["title"])
                 model_filenames.append(queue_model_format[queue_model]["filename"])
 
@@ -134,19 +143,37 @@ def plot_distribution_and_analyze(queue_model, n, rho):
     plt.ylabel('Frequency')
     plt.title(f'Distribution of Mean Waiting Times for {queue_model_format[queue_model]["title"]} (N={n}, $\\rho$={rho})')
 
-    lambda_est = 1 / np.mean(data)
-    
-    ks_stat_exp, _ = kstest(data, expon(scale=lambda_est).cdf)
-    ks_stat_norm, _ = kstest(data, norm(loc=np.mean(data), scale=np.std(data)).cdf)
-    ks_stat_unif, _ = kstest(data, uniform(loc=np.min(data), scale=np.max(data) - np.min(data)).cdf)
+    # Calculate metrics
+    mean_val = np.mean(data)
+    median_val = np.median(data)
+    # Assuming the mode is the maximum frequency for a bin in the histogram
+    mode_val = data.value_counts().idxmax()
+    perc_25 = np.percentile(data, 25)
+    perc_75 = np.percentile(data, 75)
 
+    # Plot vertical lines for metrics
+    plt.axvline(mean_val, color='darkblue', linestyle='-', label=f'Mean: {mean_val:.2f}')
+    # plt.axvline(median_val, color='g', linestyle='-', label=f'Median: {median_val:.2f}')
+    # plt.axvline(mode_val, color='b', linestyle=':', label=f'Mode: {mode_val:.2f}')
+    # plt.axvline(perc_25, color='light blue', linestyle='-.', label=f'25th Percentile: {perc_25:.2f}')
+    # plt.axvline(perc_75, color='light blue', linestyle='-.', label=f'75th Percentile: {perc_75:.2f}')
+
+    # plt.legend()
+
+    # Perform KS tests
+    lambda_est = 1 / mean_val
+    ks_stat_exp, _ = kstest(data, expon(scale=1/lambda_est).cdf)
+    ks_stat_norm, _ = kstest(data, norm(loc=mean_val, scale=np.std(data)).cdf)
+    ks_stat_unif, _ = kstest(data, uniform(loc=np.min(data), scale=np.max(data) - np.min(data)).cdf)
+    
     text_props = dict(horizontalalignment='right', verticalalignment='top', 
                       transform=plt.gca().transAxes, fontsize=14, bbox=dict(facecolor='white', alpha=0.5))
-
+    
     plt.text(0.95, 0.95, f'KS Test (Exponential) Statistic: {ks_stat_exp:.10f}', **text_props)
     plt.text(0.95, 0.85, f'KS Test (Normal) Statistic: {ks_stat_norm:.10f}', **text_props)
     plt.text(0.95, 0.75, f'KS Test (Uniform) Statistic: {ks_stat_unif:.10f}', **text_props)
 
+    # Save the plot
     plt.savefig(f'final_plots/distribution_{queue_model_format[queue_model]["filename"]}_N_{n}_rho_{rho}.png')
     plt.close()
 
@@ -165,24 +192,32 @@ def plot_heatmap(queue_model, ns, rhos, fixed_vmax):
 
     plt.figure(figsize=(10, 8))
     sns.heatmap(heatmap_data, annot=True, cmap='viridis', fmt=".2f", vmin=0, vmax=fixed_vmax,
-                cbar_kws={'label': 'Mean Waiting Time'})
-    plt.title(f'Mean Waiting Times for {queue_model_format[queue_model]["title"]}')
-    plt.xlabel('Number of Servers (n)')
-    plt.ylabel(fr'System load ($\rho$)')
+                cbar_kws={'label': 'Mean Waiting Time'}, annot_kws={'fontsize': fontsize})
+    plt.title(f'Mean Waiting Times for {queue_model_format[queue_model]["title"]}', fontsize=fontsize)
+    plt.xlabel('Number of Servers (n)', fontsize=fontsize)
+    plt.ylabel(fr'System load ($\rho$)', fontsize=fontsize)
     plt.savefig(f'final_plots/heatmap_{queue_model_format[queue_model]["filename"]}.png')
     plt.close()
 
 
 ns = [1, 2, 4]
-queue_models = ["MM1K"]
+queue_models = ["ShortestJobFirst", "MMN", "MDN", "Hyperexponential", "MMNK"]
+
+    # file_map = {
+    #     "MMN": "m_m_n_simulation_results.csv",
+    #     "MDN": "m_d_n_simulation_results.csv",
+    #     "Hyperexponential": "hyperexponential_simulation_results.csv",
+    #     "ShortestJobFirst": "shortest_job_first_simulation_results.csv",
+    #     "MMNK": "m_m_n_k_simulation_results.csv"
+    # }
 
 # plot_mean_for_n(queue_models, ns)
 # plot_mean_for_rho(queue_models, ns)
 
-# compare_queue_models(["MMN", "Hyperexponential"], 1, 0.9)
+compare_queue_models(["MMN", "ShortestJobFirst"], 1, 0.95)
 
-# plot_distribution_and_analyze("Hyperexponential", 1, 0.9)
+# plot_distribution_and_analyze("MMN", 4, 0.9)
 
-# plot_heatmap("Hyperexponential", [1, 2, 4], [0.7, 0.8, 0.9, 0.95], fixed_vmax=20)
+# plot_heatmap("ShortestJobFirst", ns, [0.7, 0.8, 0.9, 0.95], fixed_vmax=20)
 
 
