@@ -150,3 +150,102 @@ def analytical_mean_waiting_time_mmn(n, rho, mu):
         erlang_c = erlang_c_numerator / erlang_c_denominator
         return (erlang_c / (n * mu - n * rho * mu))
 
+def analyze(ns, rhos, mu, distribution, output_file, K=None):
+    """
+    Analyzes the simulation results and writes them to a CSV file.
+    
+    Parameters:
+    - ns: list of ints, numbers of servers to simulate.
+    - rhos: list of floats, traffic intensities to simulate.
+    - mu: float, service rate of the system.
+    - distribution: ServiceRateDistribution, type of distribution for service time.
+    - output_file: str, filename to save results.
+    - K: int, optional; capacity of the buffer for M/M/N/K simulation.
+    """
+    results = []
+    t_test_results = []
+
+    for n in ns:
+        for rho in rhos:
+            all_waiting_times = []
+            all_system_times = []
+            all_mean_customers = []
+
+            for _ in range(iterations):
+                waiting_times, system_times, _, mean_customers = run_simulation(n, rho, mu, distribution, 60000, K)
+
+                all_waiting_times.extend(waiting_times)
+                all_system_times.extend(system_times)
+                all_mean_customers.append(mean_customers)
+                mean_list = np.concatenate((np.arange(100, 1000, 500), np.arange(1000, 20000, 3000), np.arange(10000, 40000, 2000)))
+
+                for num_customers in mean_list:
+                    sampled_times = waiting_times[:num_customers]
+                    sampled_system_times = system_times[:num_customers]
+                    mean_wait = np.mean(sampled_times)
+                    mean_system_time = np.mean(sampled_system_times)
+                    variance = np.var(sampled_times, ddof=1)
+                    ci = stats.t.interval(0.95, len(sampled_times)-1, loc=mean_wait, scale=stats.sem(sampled_times))
+                    results.append({
+                        'n': n, 
+                        'rho': rho, 
+                        'mu': mu, 
+                        'distribution': distribution.name, 
+                        'mean_waiting_time': mean_wait, 
+                        'mean_system_time': mean_system_time,
+                        'mean_customers': np.mean(all_mean_customers),
+                        'ci_lower': ci[0], 
+                        'ci_upper': ci[1], 
+                        'variance': variance, 
+                        'number_of_customers': num_customers
+                    })
+
+            if distribution == ServiceRateDistribution.M_M_N:
+                analytical_mean = analytical_mean_waiting_time_mmn(n, rho, mu)
+                t_stat, p_value = stats.ttest_1samp(all_waiting_times, analytical_mean)
+                t_test_results.append({
+                    'n': n,
+                    'rho': rho,
+                    't_stat': t_stat,
+                    'p_value': p_value
+                })
+                print(f"Completed T-test for n={n}, rho={rho}: t_stat={t_stat}, p_value={p_value}")
+            else:
+                print(f"Completed simulation for n={n}, rho={rho}, distribution={distribution.name}")
+
+    df_results = pd.DataFrame(results)
+    if t_test_results:
+        df_t_test = pd.DataFrame(t_test_results)
+        combined_df = pd.merge(df_results, df_t_test, on=['n', 'rho'], how='outer')
+    else:
+        combined_df = df_results
+    combined_df.to_csv(output_file)
+    print(f"Results written to {output_file}")
+
+
+
+"""
+Simulation parameters and execution loop.
+
+Add more iterations if needed for the statistical analysis. 
+The set of distributions can be changed as well according to the enum list at the top.
+The output files are saved in the same directory as this script and named after the distribution.
+The plotting script uses these exact names.
+
+"""
+mu = 0.5
+ns = [1, 2, 4]
+rhos = [0.7, 0.8, 0.9, 0.95]
+iterations = 30
+
+    
+distributions = [ServiceRateDistribution.M_M_N,
+                 ServiceRateDistribution.M_D_N,
+                 ServiceRateDistribution.SHORTEST_JOB_FIRST]
+
+output_files = []
+for distribution in distributions:
+    output_file = f"{distribution.name.lower()}_simulation_results.csv"
+    analyze(ns, rhos, mu, distribution, output_file, K=10)
+    output_files.append(output_file)
+
