@@ -36,6 +36,7 @@ def load_data(queue_model, n=None):
         "MMN": "m_m_n_simulation_results.csv",
         "MDN": "m_d_n_simulation_results.csv",
         "Hyperexponential": "hyperexponential_simulation_results.csv",
+        "LongTailHyperexponential": "long_tail_hyperexponential_simulation_results.csv",
         "ShortestJobFirst": "shortest_job_first_simulation_results.csv",
         "MMNK": "m_m_n_k_simulation_results.csv"
     }
@@ -48,7 +49,8 @@ def load_data(queue_model, n=None):
 queue_model_format = {
     "MMN": {"title": "M/M/m (FIFO)", "filename": "MMN"},
     "MDN": {"title": "M/D/m", "filename": "MDN"},
-    "Hyperexponential": {"title": "Hyperexponential", "filename": "Hyperexponential"},
+    "Hyperexponential": {"title": "Short-Tail Hyperexponential", "filename": "Hyperexponential"},
+    "LongTailHyperexponential": {"title": "Long-Tail Hyperexponential", "filename": "LongTailHyperexponential"},
     "ShortestJobFirst": {"title": "M/M/m (Shortest Job First)", "filename": "ShortestJobFirst"},
     "MMNK": {"title": "M/M/1/K", "filename": "MM1K"}
 }
@@ -81,7 +83,6 @@ def plot_mean_for_n(queue_models, ns):
             plt.close()
 
 
-
 def plot_mean_for_rho(queue_models, ns):
     """
     Plot mean waiting time for different system loads across queue models.
@@ -111,8 +112,6 @@ def plot_mean_for_rho(queue_models, ns):
             plt.legend(loc='upper right')
             plt.savefig(f'final_plots/{queue_model_format[queue_model]["filename"]}_plot_rho_{rho}.png')
             plt.close()
-
-
         
 
 def compare_queue_models(queue_models, n, rho):
@@ -194,7 +193,7 @@ def plot_distribution_and_analyze(queue_model, n, rho):
     text_props = dict(horizontalalignment='right', verticalalignment='top', 
                       transform=plt.gca().transAxes, fontsize=fontsize, bbox=dict(facecolor='white', alpha=0.5))
     
-    plt.text(0.95, 0.95, f'KS Test Statistic: {ks_stat_exp:.4f}', **text_props)
+    # plt.text(0.95, 0.95, f'KS Test Statistic: {ks_stat_exp:.4f}', **text_props)
     # plt.text(0.95, 0.85, f'KS Test (Normal) Statistic: {ks_stat_norm:.10f}', **text_props)
     # plt.text(0.95, 0.75, f'KS Test (Uniform) Statistic: {ks_stat_unif:.10f}', **text_props)
 
@@ -227,6 +226,7 @@ def plot_heatmap(queue_model, ns, rhos, fixed_vmax):
     plt.savefig(f'final_plots/heatmap_{queue_model_format[queue_model]["filename"]}.png')
     plt.close()
 
+
 def compare_all_queue_models(queue_models, ns, rhos):
     """
     Compare all queue models for given numbers of servers and system loads.
@@ -254,16 +254,104 @@ def compare_all_queue_models(queue_models, ns, rhos):
             models_title = " vs. ".join(model_titles)
             title = fr'$\rho={rho}, m={n}$'
             plt.title(title, fontsize=fontsize)
-            plt.legend(fontsize=fontsize)
+            plt.legend(fontsize=15)
             plt.xticks(fontsize=fontsize)
             plt.yticks(fontsize=fontsize)
             plt.savefig(f'final_plots/comparison_all_models_rho_{rho}_N_{n}.png')
             plt.close()
 
 
+def plot_mean_sojourn_time_for_n(queue_models, ns):
+    """
+    Plot mean sojourn time for different numbers of customers and servers.
+    """
+    for queue_model in queue_models:
+        for n in ns:
+            df = load_data(queue_model, n)
+            plt.figure(figsize=(7, 5))
+            colors = plt.cm.viridis(np.linspace(0, 0.8, len(df['rho'].unique())))
+
+            for index_rho, rho in enumerate(sorted(df['rho'].unique())):
+                df_rho = df[df['rho'] == rho]
+                sns.lineplot(x='number_of_customers', y='mean_system_time', data=df_rho,
+                             label=fr'$\rho$={rho}', estimator='mean', ci='sd', color=colors[index_rho])
+
+            plt.xlabel('Number of Customers')
+            plt.ylabel('Mean Sojourn Time')
+            plt.title(f'Mean Sojourn Time for {queue_model_format[queue_model]["title"]} (m={n})')
+            plt.legend()
+            plt.savefig(f'final_plots/{queue_model_format[queue_model]["filename"]}_mean_sojourn_time_n_{n}.png')
+            plt.close()
+
+def plot_mean_customers_for_n(queue_models, ns):
+    """
+    Plot mean number of customers in the system for different numbers of customers and servers.
+    """
+    line_styles = {1: ':', 2: '--', 4: '-'}
+    
+    for queue_model in queue_models:
+        for n in ns:
+            df = load_data(queue_model, n)
+            plt.figure(figsize=(7, 5))
+            colors = plt.cm.viridis(np.linspace(0, 0.8, len(df['rho'].unique())))
+
+            for index_rho, rho in enumerate(sorted(df['rho'].unique())):
+                df_rho = df[df['rho'] == rho]
+                sns.lineplot(x='number_of_customers', y='mean_customers', data=df_rho,
+                             label=fr'$\rho$={rho}', estimator='mean', ci='sd', color=colors[index_rho],
+                             linestyle=line_styles[n])
+
+            plt.xlabel('Number of Customers')
+            plt.ylabel('Mean Number of Customers in System')
+            plt.title(f'Mean Number of Customers in System for {queue_model_format[queue_model]["title"]} (m={n})')
+            plt.legend()
+            plt.savefig(f'final_plots/{queue_model_format[queue_model]["filename"]}_mean_customers_n_{n}.png')
+            plt.close()
+
+
+def print_average_queue_lengths(queue_models, ns, rhos):
+    """
+    Prints the average number of customers in the system for different queue models,
+    numbers of servers, and system loads.
+    """
+    for queue_model in queue_models:
+        print(f"Queue Model: {queue_model_format[queue_model]['title']}")
+        for n in ns:
+            for rho in rhos:
+                df = load_data(queue_model, n)
+                df_rho = df[df['rho'] == rho]
+                mean_customers = df_rho['mean_customers'].mean()
+                print(f"n={n}, ρ={rho}: Mean number of customers in system = {mean_customers:.2f}")
+        print()
+
+def plot_mean_customers_vs_rho_for_n(queue_models, ns):
+    """
+    Plot mean number of customers in the system against system load (rho) for different values of n.
+    """
+    line_styles = {1: ':', 2: '--', 4: '-'}
+    
+    for n in ns:
+        plt.figure(figsize=(10, 6))
+        colors = plt.cm.viridis(np.linspace(0, 0.8, len(queue_models)))
+
+        for index, queue_model in enumerate(queue_models):
+            df = load_data(queue_model, n)
+            sns.lineplot(x='rho', y='mean_customers', data=df,
+                         label=f'{queue_model_format[queue_model]["title"]}',
+                         estimator='mean', ci='sd', color=colors[index],
+                         linestyle=line_styles[n])
+
+        plt.xlabel('System Load (rho)', fontsize=fontsize)
+        plt.ylabel('Mean Number of Customers in System', fontsize=fontsize)
+        plt.title(f'Mean Number of Customers in System vs. System Load (rho), m={n}', fontsize=fontsize)
+        plt.legend(fontsize=fontsize)
+        plt.savefig(f'final_plots/mean_customers_vs_rho_n_{n}.png')
+        plt.close()
+
 ns = [1, 2, 4]
 rhos = [0.7, 0.8, 0.9, 0.95]
-queue_models = ["MMN", "MDN", "ShortestJobFirst", "Hyperexponential"]
+queue_models = ["MMN","MDN", "Hyperexponential", "LongTailHyperexponential"]
+
 
 
 """
@@ -274,13 +362,21 @@ Uncomment one or many of the following lines to generate the respective plots.
 # plot_mean_for_n(queue_models, ns)
 # plot_mean_for_rho(queue_models, ns)
 
-# compare_queue_models(["MMN", "ShortestJobFirst"], 4, 0.9)
+# compare_queue_models(["MMN", "LongTailHyperexponential"], 4, 0.9)
 
-# plot_distribution_and_analyze("MMN", 1, 0.7)
+# plot_distribution_and_analyze("MMN", 1, 0.9)
 
 # plot_heatmap("Hyperexponential", ns, [0.7, 0.8, 0.9, 0.95], fixed_vmax=20)
 
 # compare_all_queue_models(queue_models, ns, rhos)
+
+# plot_mean_sojourn_time_for_n(queue_models, ns)
+
+# plot_mean_customers_for_n(queue_models, ns)
+
+# print_average_queue_lengths(queue_models, ns, rhos)
+
+# plot_mean_customers_vs_rho_for_n(queue_models, ns)
 
 
 
